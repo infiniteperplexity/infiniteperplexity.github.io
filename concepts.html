@@ -31,6 +31,28 @@ Of course, you can emulate this feature simply by manually checking the run-time
 (I think that "generic function" is a synonym for "multimethod"; if there's a distinction, it eludes me.)
 </p>
 <br>
+<h2>Monads</h2>
+<p>
+Multiple dispatch was easy to explain; next up we have an infamously difficult-to-explain concept. Most explanations start by saying "monads are actually quite simple", and that's only sort of true - they're maybe not as hard to understand as you've heard, but they're moderately complex as programming concepts go.
+</p>
+<ul>
+<li>The first thing to realize is that monads are not really a "language feature"; they're a design pattern, specifically a design pattern for chaining functions together. They're used when there's something problematic about the returned values that would otherwise make them difficult to chain together.</li>
+<li>The reason you might think of monads as a language feature is that they're so strongly associated with Haskell. You can't really use Haskell without using monads, and Haskell has special syntax to make monads more readable. You can easily implement monads in other languages, but the syntax is so clunky that you probably won't.</li>
+<li>Technically, monads need to support methods with confusing names like "unit" and "bind", but overall the way you use them is like so:
+<ol>
+<li>Wrap your initial argument in a monad.</li>
+<li>Call a method on that monad that wraps a function, so that instead of returning what it would normally return, it returns a monad of the same type wrapped around what the function would normally return.</li>
+<li>Take the resulting method and invoke that function-wrapping method on another function, because why else would you be going to this trouble? Repeat this process for every function you want to chain together.</li>
+<li>Finally, unwrap the value of the last monad in the chain.</li>
+</ol>
+<p>If this sounds a lot like Promises in JavaScript, that's because Promises are almost a type of monad (their API is slightly stripped down from the technical definition.) Also, the newly-added async/await syntax in JavaScript, which lets you use Promises without wanting to tear your own eyes out, is somewhat parallel to the special syntax Haskell uses to make monads less clunky.</p></li>
+<li>Because every computer program pretty much strings a bunch of operations together - even if it doesn't explicitly chain functions together - monads are an extremely general concept (some people have described semicolon line breaks as a type of monad.) You've probably written ad hoc monads before without realizing it.</li>
+<li>Basically every example you'll find online uses the Maybe monad as an example, because it's simple, it's fairly obvious why you'd want it, and it's functionality that doesn't exist natively in most languages. The Maybe monad is a design pattern for chaining together functions that might return null values but can't accept null values as arguments, so that you can avoid doing things awful stuff like "if (tile && tile.creature && tile.creature.equipment && tile.creature.equipment.mainHand) {..."</li>
+<li>...except that the syntax for the Maybe monad in any language other than Haskell tends to be so clunky that you'll write it the normal way even if you know about monads. Maybe(tile).bind(x => x["creature"]).bind(x => x["equipment"]).bind(x => x["mainHand"]).maybe(null, myCallback)...ummm, no. But hopefully this example is close enough to being useful that you can understand the general idea. Each function in the chain returns a value that might be null, and thus not a valid argument to the next function in the chain; the Maybe monad fixes that problem.</li>
+<li>The reason you need this in Haskell is that absolutely everything in Haskell has to be done in terms of chained functions, and return types get messy because all side effects and state changes have to be in the returned values. I think the issue with explaining monads isn't that they're all that much more complicated than other design patterns; it's that most people try to understand them while learning Haskell and there's a chicken-and-egg problem: You can't learn Haskell without understanding monads, but it's hard to get comfortable with monads unless you're using Haskell.
+</li>
+</ul>
+</br>
 <h2>Syntactic Macros</h2>
 <p>
 Another esoteric language feature: syntactic macros, known mostly as a feature of Lisp, but also starting to show up in newer languages such as Scala and Julia.
