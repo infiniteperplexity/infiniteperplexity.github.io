@@ -1,0 +1,149 @@
+<!--Distributed under GNU Public License version 3-->
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title>Programming Concepts</title>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css">
+</head>
+<body>
+<h1>Wherein I teach myself somewhat esoteric programming concepts.</h1>
+<br>
+<h2>Multiple Dispatch</h2>
+<p>
+I’m making an effort to understand esoteric programming language features/buzzwords well enough that I can explain them to others. Some of them are pretty hairy, so I’ll start with one I figured out pretty quickly: Multiple dispatch / multimethods.
+</p>
+<p>
+First let’s talk about two things that seem similar but are deceptively different: Dynamic single dispatch, and method overloading. Dynamic single dispatch, in most object-oriented languages, is just plain calling the methods that are attached to objects – Number.add() might add its argument to the number, whereas Array.add() might add an item to the array. When you call “add”, you could imagine that there’s an additional, invisible parameter that’s the type of object you called it from.
+</p>
+<p>
+In some languages – mostly statically typed ones like Java – you can also overload methods based on the object types of the arguments. For example, Number.add(Number n) might add its argument to the original number, whereas Number.add(String s) might concatenate the string representation of the number to its argument. So overloading the explicit arguments is pretty just like overriding methods in a subclass, right? The only difference is that the “argument” is in front of the method with a “.” instead of in the argument list?
+</p>
+<p>
+Wrong, as it turns out. In languages without multiple dispatch – which is most of them – method overriding is based on run-time type whereas method overloading is based on compile-time type. That sounds very technical, but what it means is both simple and kind of surpising. If you have Number.add(Number myNumber) and Number.add(Integer myInteger), and you declare Number myNumber = new Integer(4) and then call someNumber.add(myNumber), you’re going to get first version of the method – the one that applies to Numbers - even though your argument was a more specific subclass of type Integer. In order to use the Integer version of the method, you need to declare Integer myNumber = Integer(4). I’m sure regular Java programmers are used to this, but it was counterintuitive enough to me that I had to try it out myself in order to really believe it.
+</p>
+<p>
+In languages with multiple dispatch, such as Common Lisp or Julia, you usually have things called “multimethods”, which are declared basically like normal functions but “overload” based on the run-time type of their arguments. In such a language, you could call “add” on, say, 4 and 4.8 and correctly get the version that adds an Integer to a Float, even if both arguments were stored in variables of type Number.
+</p>
+<p>
+Of course, you can emulate this feature simply by manually checking the run-time types of all your arguments, but that gets heinous pretty quickly.
+</p>
+<p>
+(I think that "generic function" is a synonym for "multimethod"; if there's a distinction, it eludes me.)
+</p>
+<br>
+<h2>Syntactic Macros</h2>
+<p>
+Another esoteric language feature: syntactic macros, known mostly as a feature of Lisp, but also starting to show up in newer languages such as Scala and Julia.
+</p>
+<h4>The way I originally explained macros:</h4>
+<p>
+Macros are a type of subroutine that works differently from functions. Or at least, differently from what are usually called "functions" - some people define "function" in such a way that macros count as functions. Normal functions, in most languages, do the following things:
+</p>
+<ol>
+<li>Evaluate all their arguments.</li>
+<li>Create a new scope with values bound to the argument names.</li>
+<li>Do subroutine stuff in the new scope and, optionally, return a value to the calling context.</li>
+</ol>
+<p>
+That means, for example, that if you write a "println" function, and x=2 and y=3, then println(x+y) will print "5" rather than "2+3" or "x+y".
+</p>
+<p>
+Syntactic macros, instead, do the following things:
+</p>
+<ol>
+<li>Do subroutine stuff, picking and choosing which arguments get evaluated and when.</li>
+<li>Insert unevaluated code into the calling context.</li>
+</ol>
+<p>
+Most macros basically work like normal functions but with the arguments evaluated somewhere in the middle rather than at the beginning - "lazy evaluation" is the technical term for that. I already hinted at two possible syntactical macros - variations on "println" where println(x+y), with x=2 and y=3, prints either "x+y" or "2+3". That's basically just a normal function but instead of evaluating the arguments right away, you choose when and whether they get evaluated.
+</p>
+<p>
+Another example: The way "if" works in most languages is very macro-like - the "if" statement takes two or more arguments; the first one wrapped in (), the second one wrapped in {}, and the remaining ones having a special syntax involving "else." The reason "if" has to work this way is that if "if" worked like a normal function, the second argument - the block of code that's supposed to get executed if the condition is true - would get executed regardless of whether the first argument evaluated to true or not, which would defeat the point in many cases.
+</p>
+<h4>Another way to explain macros, pointed out by a reader.</h4>
+<p>
+Syntactic macros can be viewed as an extension of the compiler or interpreter - they let you add new syntax rules to the language.  This is actually a more general definition than the one I gave - the type of macro I described has syntax that looks like the syntax for a normal function, but it behaves differently.  But Lisp has another type of macro called a "reader macro" with different syntax - it behaves more like a quotation mark, changing how the following symbols are parsed.
+</p>
+<p>
+The two different ways of understanding what a "macro" is can lead to different ways of implementing macros.  The Julia and Scala implementations of macros generally follow my first explanation - they have syntax similar to functions, but they evaluate using different rules than normal functions.  The macro implementation in the sweet.js project, on the other hand, aims to let the user extend the syntax of JavaScript in any way they want; as such, it's more general and powerful than the Julia or Scala syntax, but it's also much messier. 
+</p>
+<br>
+<p>
+Because syntactic macros are basically "functions that write code", they usually operate at a higher level than normal functions - potentially more powerful, but harder to write and debug. In general, the less regular the syntax of a language, and the more "syntactical sugar" the language supports, the harder it is to write macros in that language. Which is why most friendly, readable languages like Python don't support syntactic macros, but concise, painfully logical languages like Lisp and Scheme do. Some new languages, like Scala and Julia, try for the best of both worlds, and I think the jury's still out on how well they've done.
+</p>
+<p>
+Macros are a very general concept, but there are a few especially common use cases, so some languages try to provide subsets of macro functionality without opening up the entire can of worms that macros open:
+</p>
+<ol>
+<li>Inline functions in C and C++ can speed up certain some subroutines by inserting unevaluated code instead of calling functions dynamically; other languages sometimes implement inline functions automatically as optimizations.</li>
+<li>A few languages, like Haskell and Io, use lazy evaluation for all functions, and Ruby and Smalltalk have a feature called "blocks" that allows you to pass chunks of unevaluated code to functions in ways that give you limited ability to write your own control structures.</li>
+</ol>
+<p>
+I think it's undecided at this point whether the best route is to (1) ignore macros entirely, like most languages do, (2) implement most macro use cases as specific language features, without providing general macros, as in C++ or Smalltalk, or (3) implement true syntactic macros, as in Scala or Julia.
+</p>
+<br>
+<h2>Closures</h2>
+<p>I realized that for some people - mostly depending on their main programming language - closures might qualify as an "obscure programming concept" (JavaScript folks should know this already, so go back to sleep.) There's a lot of confusion about lambdas, closures, anonymous functions, first-class functions, and callbacks - the five concepts tend to hang together, and I don't think any languages exist where all five of those things are completely distinct from one another. All of these things could be thought of as types of functions, or as descriptions of characteristics that functions might or might not have:</p>
+<ol>
+<li>"First-class function" means a function that can be passed as an argument to another function.</li>
+<li>"Anonymous function" means a first-class function without a name. Basically any language with (1) will have (2).</li>
+<li>"Closure" means a function stored along with its calling scope. This is by far the most important definition here so I'm going to come back to it. In practice, any language that has (3) is going to have (1) and (2), even if that's not technically required.</li>
+<li>"Lambda" means a closure that's also an anonymous function. So by definition, any language that has (2) and (3) will have (4).</li>
+<li>"Callback" means code that's passed to other code, which almost always means a first-class function. Any language that has (1) can potentially have (5).</li>
+</ol>
+<p>I said that a closure stores the calling scope along with a function. What that's usually going to mean is something like this:</p>
+<code>
+<pre>
+	let foo = function() {
+		let x = 1;
+		let bar = function() {
+			return x;
+		};
+		let baz = function(a) {
+			x = a;
+		};
+		return {bar: bar, baz: baz};
+	};
+	f = foo();
+	bar = f.bar;
+	baz = f.baz;
+	bar();
+	baz(3);
+	bar();
+</pre>
+</code>
+<p>
+You see (if you run this in JavaScript) how "bar" and "baz" keep references to "x", even after the function "f" that created "x" finished running? That "x" isn't visible directly from the outer scope, but "bar" and "baz" act as the "getter" and the "setter", which gives you most of the functionality of objects, but with a syntax that revolves around functions rather than methods.
+</p>
+<p>
+Why is this useful?  I can't possibly explain all the applications here, but one common use in JavaScript would be to dynamically create a menu.  You might create the menu by passing a variety of options into a function, which returns an object that has hidden references to all the things you passed in.
+<p>
+Generally speaking, the more "functional" a language is, the more the five concepts I described in this post will be the default way of doing things. In JavaScript and Lisp, closures are the default way functions work. In Python and Ruby, most functions aren't closures, but there's special syntax to make closures. Some languages, like C or older version of Java, don't have closures at all. Since I'm primarily a JavaScript programmer, I have trouble imagining life without closures, and it was weird to write about them as if they were an exotic thing that needed explaining.
+</p>
+<br>
+<h2>Continuations</h2>
+<p>
+Ever since I started writing this series, I've dreaded writing about continuations. It's actually not actually very difficult to explain what continuations are; what's harder is to explain is why you would ever want to use them - I've barely ever programmed in a language that supports continuations, so my feel for this is pretty limited.
+</p>
+<p>
+Strictly speaking, a continuation is a snapshot of the state and control flow of a program at a particular point in time. But when people talk about using continuations, they're always talking about using continuations with a function called "call-with-current-continuation", abbreviated "call/cc." Call/cc is very similar to "goto", with two main differences that make it a little more organized:
+</p>
+<ol>
+<li>It can only jump backwards. Invoking call/cc creates an object that you can later invoke to return to the point where call/cc was invoked.</li>
+<li>Invoking that object not only jumps back to point in control flow where call/cc was invoked, but also restores the state at that point.</li>
+</ol>
+<p>
+So you're basically jumping back in time, but you can also sneak along some information from the future, as arguments when you invoke the goto-like object. Which, if you think about it, is how a function return works:
+</p>
+<ol>
+<li>The program remembers the variable names and point in the code where the function was invoked.</li>
+<li>When the code reaches a "return" statement, it passes a single value back to the place where the function was invoked, throwing away all local variables and such you used in the function body (unless there's a closure involved.)</li>
+</ol>
+<p>
+This is a very general idea, and supposedly all control constructs - functions, loops, exceptions, and so on - can be implemented with continuations. But most languages already have functions, loops, and exceptions, so it's not clear why you'd introduce a glorified "goto" with all the mess that implies. You'll notice that most modern languages don't support continuations, and not too many people are complaining about that.
+</p>
+<p>
+On the other hand, Paul Graham wrote several chapters about how to use continuations, so they're probably cool and powerful in the same way syntactic macros are. They're apparently useful for situations where you need to sort of "roll back time" - backtracking constraint solvers, jumping quickly out of deeply recursive functions, websites where you can use the "Back" button, and so on. This is another one of those language features where it's genuinely controversial whether they're worth the hassle.
+</p>
+</body>
+</html>
